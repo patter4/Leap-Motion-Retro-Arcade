@@ -1,6 +1,12 @@
 import math, pygame, sys
 from pygame.locals import *
 
+import os, sys, inspect
+src_dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
+lib_dir = os.path.abspath(os.path.join(src_dir,'../lib'))
+
+sys.path.insert(0, lib_dir)
+import Leap, thread, time
 
 FPS = 200
 
@@ -18,12 +24,16 @@ LEFT = -1
 UP = -1
 DOWN = 1
 
+HAND_OFFSET = 200.0
+SCALING_FACTOR = HAND_OFFSET/WINDOW_HEIGHT
+
 
 def drawArena():
     DISPLAY_SURF.fill(BLACK)
     pygame.draw.rect(DISPLAY_SURF, WHITE, ((0,0),
                     (WINDOW_WIDTH, WINDOW_HEIGHT)), LINE_THICKNESS*2 )
-    pygame.draw.line(DISPLAY_SURF, WHITE, ((WINDOW_WIDTH/2),0),((WINDOW_WIDTH/2),WINDOW_HEIGHT), (LINE_THICKNESS/4))
+    pygame.draw.line(DISPLAY_SURF, WHITE, ((WINDOW_WIDTH/2),0),
+                    ((WINDOW_WIDTH/2),WINDOW_HEIGHT), (LINE_THICKNESS/4))
 
 
 def drawPaddle(paddle):
@@ -33,6 +43,14 @@ def drawPaddle(paddle):
         paddle.top = LINE_THICKNESS
     pygame.draw.rect(DISPLAY_SURF, WHITE, paddle)
 
+
+def movePaddle(paddle, deltaY):
+    print "moving paddle from y=%s by %s to %s" % (paddle.y, -math.floor(deltaY), paddle.y+math.floor(deltaY))
+    paddle.y = WINDOW_HEIGHT/2-math.floor(deltaY)
+    if paddle.bottom > WINDOW_HEIGHT - LINE_THICKNESS:
+            paddle.bottom = WINDOW_HEIGHT - LINE_THICKNESS
+    elif paddle.top < LINE_THICKNESS:
+        paddle.top = LINE_THICKNESS
 
 def drawBall(ball):
     pygame.draw.rect(DISPLAY_SURF, WHITE, ball)
@@ -45,17 +63,17 @@ def moveBall(ball, xDir, yDir, speed):
 
 
 def checkEdgeCollision(ball, ballDirX, ballDirY):
-    if ball.top == (LINE_THICKNESS) or ball.bottom == (WINDOW_HEIGHT - LINE_THICKNESS):
+    if ball.top <= (LINE_THICKNESS) or ball.bottom >= (WINDOW_HEIGHT - LINE_THICKNESS):
         ballDirY *= (-1)
-    if ball.left == (LINE_THICKNESS) or ball.right == (WINDOW_WIDTH - LINE_THICKNESS):
+    if ball.left <= (LINE_THICKNESS) or ball.right >= (WINDOW_WIDTH - LINE_THICKNESS):
         ballDirX *= (-1)
     return ballDirX, ballDirY
 
 
 def checkHitBall(ball, paddle1, paddle2, ballDirX):
-    if ballDirX == -1 and paddle1.right == ball.left and paddle1.top < ball.top and paddle1.bottom > ball.bottom:
+    if ballDirX == LEFT and paddle1.right == ball.left and paddle1.top < ball.top and paddle1.bottom > ball.bottom:
         return -1
-    elif ballDirX == 1 and paddle2.left == ball.right and paddle2.top < ball.top and paddle2.bottom > ball.bottom:
+    elif ballDirX == RIGHT and paddle2.left == ball.right and paddle2.top < ball.top and paddle2.bottom > ball.bottom:
         return -1
     else: return 1
 
@@ -81,8 +99,16 @@ def displayScore(score1, score2):
     DISPLAY_SURF.blit(resultSurf2, resultRect2)
 
 
+def reset():
+    ballx = WINDOW_WIDTH/2 - LINE_THICKNESS/2
+    bally = WINDOW_HEIGHT/2 - LINE_THICKNESS/2
+
 def main():
     pygame.init()
+    controller = Leap.Controller()
+    frame = controller.frame()
+    while(not frame.is_valid):
+        frame = controller.frame()
     global DISPLAY_SURF
     global BASIC_FONT, BASIC_FONT_SIZE
     BASIC_FONT_SIZE = 20
@@ -127,17 +153,39 @@ def main():
         drawPaddle(playerTwoPaddle)
         drawBall(ball)
 
+        frame = controller.frame()
+        if frame.is_valid:
+            for hand in frame.hands:
+                handType = "Left hand" if hand.is_left else "Right hand"
+                if handType == "Left hand":
+                    #we are player 1
+                    position = hand.palm_position
+                    print "positiony1 is %s" %(position.y-HAND_OFFSET)
+                    deltaY = (position.y-HAND_OFFSET) * SCALING_FACTOR
+                    movePaddle(playerOnePaddle, deltaY)
+                else:
+                    #we are player 2
+                    position = hand.palm_position
+                    print "positiony2 is %s" %(position.y-HAND_OFFSET)
+                    deltaY = (position.y-HAND_OFFSET) * SCALING_FACTOR
+                    movePaddle(playerTwoPaddle, deltaY)
+
+
         ball = moveBall(ball, ballDirX, ballDirY, speed)
+
         ballDirX, ballDirY = checkEdgeCollision(ball, ballDirX, ballDirY)
 
         ballDirX = ballDirX * checkHitBall(ball, playerOnePaddle, playerTwoPaddle, ballDirX)
 
-        score = checkPointScored(ball, score1, score2, ballDirX)
-        if score == 1:
+        point = checkPointScored(ball, score1, score2, ballDirX)
+        if point == 1:
             score1+=1
-        if score == 2:
+            reset()
+        if point == 2:
             score2+=1
+            reset()
         displayScore(score1, score2)
+
 
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
