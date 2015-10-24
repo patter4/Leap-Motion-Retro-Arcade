@@ -9,24 +9,23 @@ sys.path.insert(0, lib_dir)
 import Leap, thread, time
 
 FPS = 200
-
-WINDOW_WIDTH = 400
-WINDOW_HEIGHT = 300
-LINE_THICKNESS = 10
-PADDLE_SIZE = 50
-PADDLE_OFFSET = 20
+SCALE = 1
+WINDOW_WIDTH = 1440*SCALE
+WINDOW_HEIGHT = 900*SCALE
+LINE_THICKNESS = 30*SCALE
+PADDLE_SIZE = 150*SCALE
+PADDLE_OFFSET = 60*SCALE
 
 BLACK = (0,0,0)
 WHITE = (255,255,255)
 
-RIGHT = 1
-LEFT = -1
-UP = -1
-DOWN = 1
-
 HAND_OFFSET = 200.0
-SCALING_FACTOR = HAND_OFFSET/WINDOW_HEIGHT
+SCALING_FACTOR = WINDOW_HEIGHT/HAND_OFFSET
 
+RIGHT = WINDOW_HEIGHT/HAND_OFFSET * 2
+LEFT = -WINDOW_HEIGHT/HAND_OFFSET * 2
+UP = -WINDOW_HEIGHT/HAND_OFFSET * 2
+DOWN = WINDOW_HEIGHT/HAND_OFFSET * 2
 
 def drawArena():
     DISPLAY_SURF.fill(BLACK)
@@ -45,7 +44,7 @@ def drawPaddle(paddle):
 
 
 def movePaddle(paddle, deltaY):
-    print "moving paddle from y=%s by %s to %s" % (paddle.y, -math.floor(deltaY), paddle.y+math.floor(deltaY))
+    #print "moving paddle from y=%s by %s to %s" % (paddle.y, -math.floor(deltaY), paddle.y+math.floor(deltaY))
     paddle.y = WINDOW_HEIGHT/2-math.floor(deltaY)
     if paddle.bottom > WINDOW_HEIGHT - LINE_THICKNESS:
             paddle.bottom = WINDOW_HEIGHT - LINE_THICKNESS
@@ -71,9 +70,9 @@ def checkEdgeCollision(ball, ballDirX, ballDirY):
 
 
 def checkHitBall(ball, paddle1, paddle2, ballDirX):
-    if ballDirX == LEFT and paddle1.right == ball.left and paddle1.top < ball.top and paddle1.bottom > ball.bottom:
+    if ballDirX == LEFT and ball.left < paddle1.right and ball.left > paddle1.left and paddle1.top < ball.bottom and paddle1.bottom > ball.top:
         return -1
-    elif ballDirX == RIGHT and paddle2.left == ball.right and paddle2.top < ball.top and paddle2.bottom > ball.bottom:
+    elif ballDirX == RIGHT and ball.right > paddle2.left and ball.right < paddle2.right and paddle2.top < ball.bottom and paddle2.bottom > ball.top:
         return -1
     else: return 1
 
@@ -160,13 +159,13 @@ def main():
                 if handType == "Left hand":
                     #we are player 1
                     position = hand.palm_position
-                    print "positiony1 is %s" %(position.y-HAND_OFFSET)
+                    #print "positiony1 is %s" %(position.y-HAND_OFFSET)
                     deltaY = (position.y-HAND_OFFSET) * SCALING_FACTOR
                     movePaddle(playerOnePaddle, deltaY)
                 else:
                     #we are player 2
                     position = hand.palm_position
-                    print "positiony2 is %s" %(position.y-HAND_OFFSET)
+                    #print "positiony2 is %s" %(position.y-HAND_OFFSET)
                     deltaY = (position.y-HAND_OFFSET) * SCALING_FACTOR
                     movePaddle(playerTwoPaddle, deltaY)
 
@@ -180,10 +179,12 @@ def main():
         point = checkPointScored(ball, score1, score2, ballDirX)
         if point == 1:
             score1+=1
-            reset()
+            ball.x = WINDOW_WIDTH/2 - LINE_THICKNESS/2
+            ball.y = WINDOW_HEIGHT/2 - LINE_THICKNESS/2
         if point == 2:
             score2+=1
-            reset()
+            ball.x = WINDOW_WIDTH/2 - LINE_THICKNESS/2
+            ball.y = WINDOW_HEIGHT/2 - LINE_THICKNESS/2
         displayScore(score1, score2)
 
 
