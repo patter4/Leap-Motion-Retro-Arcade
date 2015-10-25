@@ -70,11 +70,11 @@ def checkEdgeCollision(ball, ballDirX, ballDirY):
 
 
 def checkHitBall(ball, paddle1, paddle2, ballDirX):
-    if ballDirX == LEFT and ball.left < paddle1.right and ball.left > paddle1.left and paddle1.top < ball.bottom and paddle1.bottom > ball.top:
+    if ball.colliderect(paddle1):
+       return -1
+    if ball.colliderect(paddle2):
         return -1
-    elif ballDirX == RIGHT and ball.right > paddle2.left and ball.right < paddle2.right and paddle2.top < ball.bottom and paddle2.bottom > ball.top:
-        return -1
-    else: return 1
+    return 1
 
 
 def checkPointScored(ball, score1, score2, ballDirX):
