@@ -18,6 +18,8 @@ PADDLE_OFFSET = 60*SCALE
 
 BLACK = (0,0,0)
 WHITE = (255,255,255)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
 
 HAND_OFFSET = 200.0
 SCALING_FACTOR = WINDOW_HEIGHT/HAND_OFFSET
@@ -35,12 +37,17 @@ def drawArena():
                     ((WINDOW_WIDTH/2),WINDOW_HEIGHT), (LINE_THICKNESS/4))
 
 
-def drawPaddle(paddle):
+def drawPaddle(paddle, color):
     if paddle.bottom > WINDOW_HEIGHT - LINE_THICKNESS:
             paddle.bottom = WINDOW_HEIGHT - LINE_THICKNESS
     elif paddle.top < LINE_THICKNESS:
         paddle.top = LINE_THICKNESS
-    pygame.draw.rect(DISPLAY_SURF, WHITE, paddle)
+    if color == "RED":
+        pygame.draw.rect(DISPLAY_SURF, RED, paddle)
+    elif color == "BLUE":
+        pygame.draw.rect(DISPLAY_SURF, BLUE, paddle)
+    else:
+        pygame.draw.rect(DISPLAY_SURF, WHITE, paddle)
 
 
 def movePaddle(paddle, deltaY):
@@ -148,8 +155,8 @@ def main():
                 sys.exit()
 
         drawArena()
-        drawPaddle(playerOnePaddle)
-        drawPaddle(playerTwoPaddle)
+        drawPaddle(playerOnePaddle, "RED")
+        drawPaddle(playerTwoPaddle, "BLUE")
         drawBall(ball)
 
         frame = controller.frame()
